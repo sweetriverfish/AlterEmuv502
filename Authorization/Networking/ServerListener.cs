@@ -2,37 +2,47 @@
 using System.Net;
 using System.Net.Sockets;
 
-namespace Authorization.Networking {
-    class ServerListener {
+namespace Authorization.Networking
+{
+    class ServerListener
+    {
         private readonly int bindPort;
-
         private Socket socket;
 
-        public ServerListener(int port) {
-            this.bindPort = port;
+        public ServerListener(int port)
+        {
+            bindPort = port;
         }
 
-        public bool Start() {
-            try {
-                Console.WriteLine(string.Concat("Binding a socket listener to port: ", this.bindPort, "."));
+        public bool Start()
+        {
+            try
+            {
+                Log.Instance.WriteLine($"Binding a socket listener to port: {bindPort}.");
                 socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                socket.Bind(new IPEndPoint(IPAddress.Any, this.bindPort));
-                socket.Listen(1);
-                socket.BeginAccept(new AsyncCallback(this.OnAcceptConnection), null);
-                Console.WriteLine("The socket is successfully binded to the port!");
+                socket.Bind(new IPEndPoint(IPAddress.Any, bindPort));
+                socket.Listen(10);
+                socket.BeginAccept(OnAcceptConnection, null);
+                Log.Instance.WriteLine("The socket is successfully binded to the port!");
                 return true;
-            } catch {
-                Console.WriteLine("Failed to bind a network socket to the port.");
-                Console.WriteLine("Is a server already running on this port?");
-                return false;
             }
+            catch
+            {
+                Log.Instance.WriteError("Failed to bind a network socket to the port.");
+                Log.Instance.WriteError("Is a server already running on this port?");
+            }
+
+            return false;
         }
 
-        private void OnAcceptConnection(IAsyncResult iAr) {
-            try {
+        private void OnAcceptConnection(IAsyncResult iAr)
+        {
+            try
+            {
                 Socket s = socket.EndAccept(iAr);
                 Entities.User usr = new Entities.User(s);
-            } catch { }
+            }
+            catch { }
 
             if (socket != null)
                 socket.BeginAccept(new AsyncCallback(this.OnAcceptConnection), null);

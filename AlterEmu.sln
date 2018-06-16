@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2026
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Authorization", "Authorization\Authorization.csproj", "{CA190DFE-9A01-4B33-BEC1-41DA8F6E73CF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{DB6726C2-7F7E-4913-9229-72EF8F4F682C} = {DB6726C2-7F7E-4913-9229-72EF8F4F682C}
@@ -34,5 +36,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {90D86293-B5D8-4B7F-BB44-5B8FBBF2B8BB}
 	EndGlobalSection
 EndGlobal

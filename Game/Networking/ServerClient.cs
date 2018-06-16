@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Linq;
-using System.Net;
 using System.Net.Sockets;
-using System.Collections.Generic;
 using Core.Networking;
 
-namespace Game.Networking {
-    public class ServerClient : IConnection {
-
+namespace Game.Networking
+{
+    public class ServerClient : IConnection
+    {
         private Socket socket;
         private byte[] buffer = new byte[1024];
         private byte[] cacheBuffer = new byte[0];
@@ -18,19 +16,21 @@ namespace Game.Networking {
 
         private byte serverId;
 
-        private string ip;
-        private int port;
+        private readonly string ip;
+        private readonly int port;
 
-        public ServerClient(string ip, int port) {
+        public ServerClient(string ip, int port)
+        {
             this.ip = ip;
             this.port = port;
         }
 
-        public bool Connect() {
-            try {
+        public bool Connect()
+        {
+            try
+            {
                 IsFirstConnect = true;
                 isDisconnect = false;
-                //Config.SERVER_IP = Dns.GetHostEntry(Dns.GetHostName()).AddressList.FirstOrDefault(o => o.AddressFamily == AddressFamily.InterNetwork).ToString();
                 Log.Instance.WriteLine("Fetching the local ip address to: " + Config.SERVER_IP + ".");
                 Log.Instance.WriteLine("Attampting to connect to the auth server.");
                 socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -38,49 +38,61 @@ namespace Game.Networking {
                 socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(OnDataReceived), null);
                 Log.Instance.WriteLine("Successfully connected to the auth server.");
                 return true;
-            } catch { Log.Instance.WriteLine("failed to connect to the auth server."); Disconnect(IsFirstConnect); }
+            }
+            catch { Log.Instance.WriteLine("failed to connect to the auth server."); Disconnect(IsFirstConnect); }
             return false;
         }
 
-        public void OnAuthorize(byte serverId) {
+        public void OnAuthorize(byte serverId)
+        {
             this.serverId = serverId;
             Config.SERVER_ID = serverId;
-            Log.Instance.WriteLine(string.Concat("Authorized as server: ", serverId, "."));
-        }   
+            Log.Instance.WriteLine($"Authorized as server: {serverId}.");
+        }
 
-        private void OnDataReceived(IAsyncResult iAr) {
-            try {
+        private void OnDataReceived(IAsyncResult iAr)
+        {
+            try
+            {
                 int bytesReceived = socket.EndReceive(iAr);
 
-                if (bytesReceived > 0) {
+                if (bytesReceived > 0)
+                {
                     byte[] packetBuffer = new byte[bytesReceived];
 
+                    Buffer.BlockCopy(buffer, 0, packetBuffer, 0, bytesReceived);
                     // Decrypt the bytes with the xOrKey.
-                    for (int i = 0; i < bytesReceived; i++) {
-                        packetBuffer[i] = (byte)(this.buffer[i] ^ Core.Constants.xOrKeyServerSend);
+                    for (int i = 0; i < bytesReceived; i++)
+                    {
+                        packetBuffer[i] ^= Core.Constants.xOrKeySend;
                     }
 
                     int oldLength = cacheBuffer.Length;
                     Array.Resize(ref cacheBuffer, oldLength + bytesReceived);
-                    Array.Copy(packetBuffer, 0, cacheBuffer, oldLength, packetBuffer.Length);
+                    Buffer.BlockCopy(packetBuffer, 0, cacheBuffer, oldLength, packetBuffer.Length);
 
                     int startIndex = 0; // Determs whre the bytes should split
-                    for (int i = 0; i < cacheBuffer.Length; i++) { // loop trough our cached buffer.
-                        if (cacheBuffer[i] == 0x0A) { // Found a complete packet
+                    for (int i = 0; i < cacheBuffer.Length; i++)
+                    { // loop trough our cached buffer.
+                        if (cacheBuffer[i] == 0x0A)
+                        { // Found a complete packet
                             byte[] newPacket = new byte[i - startIndex]; // determ the new packet size.
-                            for (int j = 0; j < (i - startIndex); j++) {
+                            for (int j = 0; j < (i - startIndex); j++)
+                            {
                                 newPacket[j] = cacheBuffer[startIndex + j]; // copy the buffer to the buffer of the new packet.
                             }
                             packetCount++;
 
                             // Handle the packet instantly.
                             InPacket inPacket = new InPacket(newPacket);
-                            if (inPacket.Id > 0) {
+                            if (inPacket.Id > 0)
+                            {
                                 PacketHandler<ServerClient> pHandler = NetworkTable.Instance.FindInternal(inPacket);
-                                if (pHandler != null) {
+                                if (pHandler != null)
+                                {
                                     //try {
-                                        pHandler.Handle(this, inPacket);
-                                //} catch { /*Disconnect();*/ }
+                                    pHandler.Handle(this, inPacket);
+                                    //} catch { /*Disconnect();*/ }
                                 }
                             }
 
@@ -88,17 +100,21 @@ namespace Game.Networking {
                         }
                     }
 
-                    if (startIndex > 0) {
+                    if (startIndex > 0)
+                    {
                         byte[] fullCopy = cacheBuffer;
                         Array.Resize(ref cacheBuffer, (cacheBuffer.Length - startIndex));
-                        for (int i = 0; i < (cacheBuffer.Length - startIndex); i++) {
+                        for (int i = 0; i < (cacheBuffer.Length - startIndex); i++)
+                        {
                             cacheBuffer[i] = fullCopy[startIndex + i];
                         }
                         fullCopy = null;
                     }
 
                     socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(OnDataReceived), null);
-                } else {
+                }
+                else
+                {
                     Disconnect();
                 }
             }
@@ -108,25 +124,32 @@ namespace Game.Networking {
             }
         }
 
-        public void Send(OutPacket outPacket) {
-            try {
+        public void Send(OutPacket outPacket)
+        {
+            try
+            {
                 byte[] sendBuffer = outPacket.BuildEncrypted();
                 socket.BeginSend(sendBuffer, 0, sendBuffer.Length, SocketFlags.None, new AsyncCallback(SendCallback), null);
-            } catch {
+            }
+            catch
+            {
                 Disconnect();
             }
         }
 
-        private void SendCallback(IAsyncResult iAr) {
+        private void SendCallback(IAsyncResult iAr)
+        {
             try { socket.EndSend(iAr); }
             catch { Disconnect(); }
         }
 
-        public void Disconnect() {
+        public void Disconnect()
+        {
             Disconnect(false);
         }
 
-        public void Disconnect(bool noReconnect) {
+        public void Disconnect(bool noReconnect)
+        {
             if (IsFirstConnect)
                 IsFirstConnect = false;
 

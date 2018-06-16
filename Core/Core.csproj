@@ -62,7 +62,7 @@
     <Compile Include="Enums\ServerTypes.cs" />
     <Compile Include="Files\BinHandler.cs" />
     <Compile Include="Files\BinReader.cs" />
-    <Compile Include="Files\Bin\TypedObject.cs" />
+    <Compile Include="Files\TypedObject.cs" />
     <Compile Include="IO\INIFile.cs" />
     <Compile Include="LevelCalculator.cs" />
     <Compile Include="Networking\AbstractNetworkTable.cs" />

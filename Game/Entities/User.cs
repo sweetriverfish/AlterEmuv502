@@ -74,7 +74,7 @@ namespace Game.Entities
             isDisconnect = false;
 
             this.socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(OnDataReceived), null);
-            Send(new Core.Packets.Connection(Core.Constants.xOrKeySend));
+            Send(new Core.Packets.Connection());
         }
 
         public static void WriteLine(string logText)
@@ -191,31 +191,13 @@ namespace Game.Entities
         {
             // Store old XP.
             ulong oldXP = this.XP;
-            if (((long)oldXP + xpEarned) > 0)
-            {
-                if (xpEarned < 0)
-                {
-                    XP -= (ulong)Math.Abs(xpEarned);
-                }
-                else
-                {
-                    XP += (ulong)xpEarned;
-                }
 
-            }
-            else
-            {
-                XP = 0;
-            }
+            // You can't earn negative XP or money.
+            moneyEarned = Math.Max(0, moneyEarned);
+            xpEarned = Math.Max(0, xpEarned);
 
-
-            if (((long)Money + moneyEarned) > 0)
-                if (moneyEarned < 0)
-                    Money -= (uint)Math.Abs(moneyEarned);
-                else
-                    Money += (uint)moneyEarned;
-            else
-                Money = 0;
+            XP += (ulong)xpEarned;
+            Money += (uint)moneyEarned;
 
             // Detect level changes.
             byte oldLevel = Core.LevelCalculator.GetLevelforExp(oldXP);
@@ -224,10 +206,11 @@ namespace Game.Entities
             if (currentLevel > oldLevel)
             { // Gained a level or more, send level up packet.
                 // Calculate the diffrence.
-                byte levelsGained = (byte)(currentLevel - oldLevel);
-                uint lvlMoneyEarned = levelsGained * Config.LEVEL_UP_MONEY_REWARD;
+                var levelsGained = currentLevel - oldLevel;
+                var lvlMoneyEarned = Math.Max(0, levelsGained * Config.LEVEL_UP_MONEY_REWARD);
+
                 // Apply the Money & Send packet.
-                Money += lvlMoneyEarned;
+                Money += (uint)lvlMoneyEarned;
                 uint nowTimeStamp = (uint)DateTime.Now.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0)).TotalSeconds;
                 Send(new Packets.LevelUp(this, lvlMoneyEarned));
 
@@ -236,7 +219,7 @@ namespace Game.Entities
                     { "user_id", this.ID },
                     { "game_id", 0 }, // TODO
                     { "current_level", currentLevel},
-                    { "levels_gained", levelsGained },
+                    { "levels_gained", (byte)levelsGained },
                     { "timestamp", nowTimeStamp }
                 });
             }

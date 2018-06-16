@@ -22,7 +22,7 @@ namespace Game.Managers {
             ConcurrentDictionary<string, ItemData> temp = new ConcurrentDictionary<string, ItemData>();
 
             try {
-                MySqlCommand cmd = new MySqlCommand("SELECT details.id, details.code, details.active, details.name, shop.buyable, shop.req_level, shop.req_premium, shop.add_dinar, shop.cost, equipment.class1, equipment.class2, equipment.class3, equipment.class4, equipment.class5, target_info.power, target_info.personal, target_info.surface, target_info.ship, target_info.air FROM item_weapons AS details LEFT JOIN item_shop shop ON shop.code=details.code LEFT JOIN item_equipment equipment on equipment.code=details.code LEFT JOIN item_target_info target_info on target_info.code=details.code", Databases.Game.connection);
+                MySqlCommand cmd = new MySqlCommand("SELECT details.id, details.code, details.active, details.name, shop.buyable, shop.req_level, shop.req_premium, shop.add_dinar, shop.cost, equipment.class1, equipment.class2, equipment.class3, equipment.class4, equipment.class5, target_info.power, target_info.personal, target_info.surface, target_info.ship, target_info.air FROM item_weapons AS details LEFT JOIN item_shop shop ON shop.code=details.code LEFT JOIN item_equipment equipment on equipment.code=details.code LEFT JOIN item_target_info target_info on target_info.code=details.code", Databases.Game.OpenConnection());
                 MySqlDataReader reader = cmd.ExecuteReader();
 
                 if (reader.HasRows) {
@@ -66,7 +66,7 @@ namespace Game.Managers {
                 }
 
                 reader.Close();
-                cmd = new MySqlCommand("SELECT details.id, details.code, details.active, details.name, shop.buyable, shop.req_level, shop.req_premium, shop.add_dinar, shop.cost FROM item_extra AS details LEFT JOIN item_shop shop ON shop.code=details.code", Databases.Game.connection);
+                cmd = new MySqlCommand("SELECT details.id, details.code, details.active, details.name, shop.buyable, shop.req_level, shop.req_premium, shop.add_dinar, shop.cost FROM item_extra AS details LEFT JOIN item_shop shop ON shop.code=details.code", Databases.Game.OpenConnection());
                 reader = cmd.ExecuteReader();
                 if (reader.HasRows) {
                     while (reader.Read()) {
@@ -94,8 +94,8 @@ namespace Game.Managers {
                 this.Items = temp;
 
                 return true;
-            } catch {
-
+            } catch(Exception e) {
+                Log.Instance.WriteDebug(e.ToString());
             }
 
             return false;

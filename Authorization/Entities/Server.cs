@@ -4,9 +4,12 @@ using System.Net.Sockets;
 using Core.Enums;
 using Core.Networking;
 using Authorization.Networking;
+using Core.Entities;
 
-namespace Authorization.Entities {
-    public class Server : Core.Entities.Entity, IConnection {
+namespace Authorization.Entities
+{
+    public class Server : Entity, IConnection
+    {
 
         private ServerTypes type = ServerTypes.Normal;
         private string ip;
@@ -23,16 +26,19 @@ namespace Authorization.Entities {
         private bool isAuthorized = false;
 
         public Server(Socket socket)
-            : base(0, "Unknown", "Unknown") {
+            : base(0, "Unknown", "Unknown")
+        {
             this.socket = socket;
             isDisconnect = false;
             this.socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(OnDataReceived), null);
-            Send(new Core.Packets.Connection(Core.Constants.xOrKeyServerSend));
+
+            Send(new Core.Packets.Connection());
         }
 
-        public void OnAuthorize(byte id, string name, string ip, int port, ServerTypes type) {
-            this.ID = (uint)id;
-            this.Name = string.Concat("GameServer", id);
+        public void OnAuthorize(byte serverId, string name, string ip, int port, ServerTypes type)
+        {
+            this.ID = serverId;
+            this.Name = string.Concat("GameServer", serverId);
             this.Displayname = name;
             this.ip = ip;
             this.port = port;
@@ -40,39 +46,49 @@ namespace Authorization.Entities {
             this.isAuthorized = true;
         }
 
-        private void OnDataReceived(IAsyncResult iAr) {
-            try {
+        private void OnDataReceived(IAsyncResult iAr)
+        {
+            try
+            {
                 int bytesReceived = socket.EndReceive(iAr);
 
-                if (bytesReceived > 0) {
+                if (bytesReceived > 0)
+                {
                     byte[] packetBuffer = new byte[bytesReceived];
 
+                    Buffer.BlockCopy(buffer, 0, packetBuffer, 0, bytesReceived);
                     // Decrypt the bytes with the xOrKey.
-                    for (int i = 0; i < bytesReceived; i++) {
-                        packetBuffer[i] = (byte)(this.buffer[i] ^ Core.Constants.xOrKeyServerReceive);
-                    }
+                    for (int i = 0; i < bytesReceived; i++)
+                        packetBuffer[i] ^= Core.Constants.xOrKeySend;
 
                     int oldLength = cacheBuffer.Length;
                     Array.Resize(ref cacheBuffer, oldLength + bytesReceived);
-                    Array.Copy(packetBuffer, 0, cacheBuffer, oldLength, packetBuffer.Length);
+                    Buffer.BlockCopy(packetBuffer, 0, cacheBuffer, oldLength, packetBuffer.Length);
 
                     int startIndex = 0; // Determs whre the bytes should split
-                    for (int i = 0; i < cacheBuffer.Length; i++) { // loop trough our cached buffer.
-                        if (cacheBuffer[i] == 0x0A) { // Found a complete packet
+                    for (int i = 0; i < cacheBuffer.Length; i++)
+                    { // loop trough our cached buffer.
+                        if (cacheBuffer[i] == 0x0A)
+                        { // Found a complete packet
                             byte[] newPacket = new byte[i - startIndex]; // determ the new packet size.
-                            for (int j = 0; j < (i - startIndex); j++) {
+                            for (int j = 0; j < (i - startIndex); j++)
+                            {
                                 newPacket[j] = cacheBuffer[startIndex + j]; // copy the buffer to the buffer of the new packet.
                             }
                             packetCount++;
 
                             // Handle the packet instantly.
                             InPacket inPacket = new InPacket(newPacket);
-                            if (inPacket.Id > 0) {
+                            if (inPacket.Id > 0)
+                            {
                                 PacketHandler<Server> pHandler = NetworkTable.Instance.FindInternal(inPacket);
-                                if (pHandler != null) {
-                                    try {
+                                if (pHandler != null)
+                                {
+                                    try
+                                    {
                                         pHandler.Handle(this, inPacket);
-                                    } catch { /*Disconnect();*/ }
+                                    }
+                                    catch { /*Disconnect();*/ }
                                 }
                                 else
                                 {
@@ -84,10 +100,12 @@ namespace Authorization.Entities {
                         }
                     }
 
-                    if (startIndex > 0) {
+                    if (startIndex > 0)
+                    {
                         byte[] fullCopy = cacheBuffer;
                         Array.Resize(ref cacheBuffer, (cacheBuffer.Length - startIndex));
-                        for (int i = 0; i < (cacheBuffer.Length - startIndex); i++) {
+                        for (int i = 0; i < (cacheBuffer.Length - startIndex); i++)
+                        {
                             cacheBuffer[i] = fullCopy[startIndex + i];
                         }
                         fullCopy = null;
@@ -95,36 +113,50 @@ namespace Authorization.Entities {
 
 
                     socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(OnDataReceived), null);
-                } else {
+                }
+                else
+                {
                     Disconnect();
                 }
-            } catch {
+            }
+            catch
+            {
                 Disconnect();
             }
         }
 
-        public void Send(Core.Networking.OutPacket outPacket) {
-            try {
+        public void Send(OutPacket outPacket)
+        {
+            try
+            {
                 byte[] sendBuffer = outPacket.BuildEncrypted();
                 socket.BeginSend(sendBuffer, 0, sendBuffer.Length, SocketFlags.None, new AsyncCallback(SendCallback), null);
-            } catch {
+            }
+            catch
+            {
                 Disconnect();
             }
         }
 
-        private void SendCallback(IAsyncResult iAr) {
-            try {
+        private void SendCallback(IAsyncResult iAr)
+        {
+            try
+            {
                 socket.EndSend(iAr);
-            } catch {
+            }
+            catch
+            {
                 Disconnect();
             }
         }
 
-        public void Disconnect() {
+        public void Disconnect()
+        {
             if (isDisconnect) return;
             isDisconnect = true;
 
-            if (ID > 0) {
+            if (ID > 0)
+            {
                 Managers.ServerManager.Instance.Remove((byte)ID);
             }
 

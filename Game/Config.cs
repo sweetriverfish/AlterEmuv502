@@ -14,7 +14,7 @@ namespace Game {
 
         public static int MAXIMUM_ROOM_COUNT = 5;
         public static int MAXIMUM_TEAM_DIFFRENCE = 1;
-        public static uint LEVEL_UP_MONEY_REWARD = 25000u;
+        public static long LEVEL_UP_MONEY_REWARD = 25000;
 
         public static string[] GAME_DATABASE;
 
@@ -38,10 +38,10 @@ namespace Game {
                 catch { MAXIMUM_TEAM_DIFFRENCE = 1; }
 
                 try { EXP_RATE = double.Parse(_expRate); }
-                catch { EXP_RATE = 0; }
+                catch { EXP_RATE = 1.0; }
 
                 try { DINAR_RATE = double.Parse(_dinarRate); }
-                catch { DINAR_RATE = 0; }
+                catch { DINAR_RATE = 1.0; }
 
                 if (EXP_RATE <= 0 || DINAR_RATE <= 0)
                 {

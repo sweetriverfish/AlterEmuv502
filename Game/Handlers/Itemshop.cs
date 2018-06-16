@@ -76,7 +76,7 @@ namespace Game.Handlers {
 
                                                             try
                                                             {
-                                                                cmd = new MySql.Data.MySqlClient.MySqlCommand(string.Concat("INSERT INTO user_inventory (`id`, `owner`, `code`, `startdate`, `length`, `price`, `expired`, `deleted`) VALUES (NULL, '", sender.ID, "', '", item.Code.ToUpper(), "', '", utcTime, "', '", itemLength, "', '", price, "', '0', '0');"), Databases.Game.connection);
+                                                                cmd = new MySql.Data.MySqlClient.MySqlCommand(string.Concat("INSERT INTO user_inventory (`id`, `owner`, `code`, `startdate`, `length`, `price`, `expired`, `deleted`) VALUES (NULL, '", sender.ID, "', '", item.Code.ToUpper(), "', '", utcTime, "', '", itemLength, "', '", price, "', '0', '0');"), Databases.Game.OpenConnection());
                                                                 cmd.ExecuteNonQuery();
                                                                 itemdbId = (uint)cmd.LastInsertedId;
                                                             }

@@ -4,64 +4,51 @@ using Game.Entities;
 
 namespace Game.Managers
 {
-    class UserManager {
+    class UserManager
+    {
+        public int Peak { get; private set; }
 
         public readonly ConcurrentDictionary<uint, User> Sessions;
-        private int playerPeak = 0;
 
-        public UserManager() {
+        public UserManager()
+        {
             Sessions = new ConcurrentDictionary<uint, User>();
         }
 
-        public bool Add(uint sessionId, User u) {
-            if (!Sessions.ContainsKey(sessionId))
-            {
-                u.SetSession(sessionId);
-                if (Sessions.TryAdd(sessionId, u))
-                {
-                    if (Sessions.Count > playerPeak)
-                        playerPeak = Sessions.Count;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public User Get(uint sessionId) {
-            User u = null;
-            if (Sessions.ContainsKey(sessionId)) {
-                try { Sessions.TryGetValue(sessionId, out u); }
-                catch { u = null; }
-                
-            }
-            return u;
-        }
-
-        public void Remove(uint sessionId) {
-            if (Sessions.ContainsKey(sessionId))
-            {
-                User u = null;
-                Sessions.TryRemove(sessionId, out u);
-
-                if (u != null) {
-                    if (u.Authenticated) {
-                        // SAVE THE PLAYER DATA //
-                        string query = string.Concat("UPDATE user_details SET kills = '", u.Kills ,"', deaths = '", u.Deaths ,"', headshots = '", u.Headshots ,"', xp = '", u.XP ,"', play_time = '0', rounds_played = '", u.RoundsPlayed ,"', bombs_planted = '", u.BombsPlanted ,"', bombs_defused = '", u.BombsDefused ,"' WHERE id = ", u.ID, ";");
-                        Databases.Game.Query(query);
-                    }
-                }
-
-                // TELL THE AUTH SERVER THAT THE SESSION IS EXPIRED //
-                Program.AuthServer.Send(new Packets.Internal.PlayerAuthorization(sessionId));
-            }
-        }
-
-        public int Peak
+        public bool Add(uint sessionId, User u)
         {
-            get
+            if (!Sessions.TryAdd(sessionId, u))
+                return false;
+
+            u.SetSession(sessionId);
+
+            if (Sessions.Count > Peak)
+                Peak = Sessions.Count;
+
+            return true;
+        }
+
+        public User Get(uint sessionId)
+        {
+            Sessions.TryGetValue(sessionId, out var result);
+
+            return result;
+        }
+
+        public void Remove(uint sessionId)
+        {
+            if (Sessions.TryRemove(sessionId, out var u))
             {
-                return this.playerPeak;
+                if (u.Authenticated)
+                {
+                    // SAVE THE PLAYER DATA //
+                    string query = string.Concat("UPDATE user_details SET kills = '", u.Kills, "', deaths = '", u.Deaths, "', headshots = '", u.Headshots, "', xp = '", u.XP, "', play_time = '0', rounds_played = '", u.RoundsPlayed, "', bombs_planted = '", u.BombsPlanted, "', bombs_defused = '", u.BombsDefused, "' WHERE id = ", u.ID, ";");
+                    Databases.Game.Query(query);
+                }
             }
+
+            // TELL THE AUTH SERVER THAT THE SESSION IS EXPIRED //
+            Program.AuthServer.Send(new Packets.Internal.PlayerAuthorization(sessionId));
         }
 
         private static UserManager instance = null;

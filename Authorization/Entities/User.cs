@@ -2,28 +2,26 @@
 using System.Net.Sockets;
 using Core.Networking;
 using Authorization.Networking;
+using Core.Entities;
 
 namespace Authorization.Entities
 {
-    public class User : Core.Entities.Entity, IConnection
+    public class User : Entity, IConnection
     {
+        public bool Authorized { get; private set; }
+        public uint SessionID { get; private set; }
+
         private Socket socket;
         private byte[] buffer = new byte[1024];
         private byte[] cacheBuffer = new byte[0];
-        private uint packetCount = 0;
-
-        private bool isDisconnect = false;
-        private bool isAuthorized = false;
-
-        private uint sessionId = 0;
+        private bool disconnected;
 
         public User(Socket socket)
             : base(0, "Unknown", "Unknown")
         {
             this.socket = socket;
-            isDisconnect = false;
             this.socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(OnDataReceived), null);
-            Send(new Core.Packets.Connection(Core.Constants.xOrKeySend));
+            Send(new Core.Packets.Connection());
         }
 
         public void OnAuthorize(uint id, string name, string displayname)
@@ -32,13 +30,13 @@ namespace Authorization.Entities
             this.Name = name;
             this.Displayname = displayname;
             Managers.SessionManager.Instance.Add(this);
-            this.isAuthorized = true;
+            Authorized = true;
         }
 
         public void UpdateDisplayname(string displayname)
         {
             this.Displayname = displayname;
-            Session s = Managers.SessionManager.Instance.Get(this.sessionId);
+            Session s = Managers.SessionManager.Instance.Get(SessionID);
             if (s != null)
             {
                 s.UpdateDisplayname(displayname);
@@ -47,7 +45,7 @@ namespace Authorization.Entities
 
         public void SetSession(uint sessionId)
         {
-            this.sessionId = sessionId;
+            SessionID = sessionId;
         }
 
         private void OnDataReceived(IAsyncResult iAr)
@@ -60,11 +58,10 @@ namespace Authorization.Entities
                 {
                     byte[] packetBuffer = new byte[bytesReceived];
 
+                    Buffer.BlockCopy(buffer, 0, packetBuffer, 0, packetBuffer.Length);
                     // Decrypt the bytes with the xOrKey.
                     for (int i = 0; i < bytesReceived; i++)
-                    {
-                        packetBuffer[i] = (byte)(this.buffer[i] ^ Core.Constants.xOrKeyReceive);
-                    }
+                        packetBuffer[i] ^= Core.Constants.xOrKeyReceive;
 
                     int oldLength = cacheBuffer.Length;
                     Array.Resize(ref cacheBuffer, oldLength + bytesReceived);
@@ -72,17 +69,16 @@ namespace Authorization.Entities
 
                     int startIndex = 0; // Determs whre the bytes should split
                     for (int i = 0; i < cacheBuffer.Length; i++)
-                    { 
+                    {
                         // loop trough our cached buffer.
                         if (cacheBuffer[i] == 0x0A)
-                        { 
+                        {
                             // Found a complete packet
                             byte[] newPacket = new byte[i - startIndex]; // determ the new packet size.
                             for (int j = 0; j < (i - startIndex); j++)
                             {
                                 newPacket[j] = cacheBuffer[startIndex + j]; // copy the buffer to the buffer of the new packet.
                             }
-                            packetCount++;
 
                             // Handle the packet instantly.
                             InPacket inPacket = new InPacket(newPacket);
@@ -152,15 +148,12 @@ namespace Authorization.Entities
 
         public void Disconnect()
         {
-            if (isDisconnect) return;
-            isDisconnect = true;
+            if (disconnected) return;
+            disconnected = true;
 
             try { socket.Close(); } catch { }
         }
 
-        public bool Authorized { get { return this.isAuthorized; } set { } }
-        public uint SessionID { get { return this.sessionId; } set { } }
-
-        public string RemoteEndIP { get { return socket.RemoteEndPoint.ToString().Split(':')[0]; } }
+        public string RemoteEndIP => socket.RemoteEndPoint.ToString().Split(':')[0];
     }
 }

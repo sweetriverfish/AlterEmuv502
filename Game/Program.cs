@@ -1,7 +1,7 @@
 ﻿/*
  * Alter EMU - Written By CodeDragon
  * 
- * Emulator Verion: 5.0.1
+ * Emulator Verion: 5.0.2
  * Credits:
  *  - CodeDragon
  *  - Basser

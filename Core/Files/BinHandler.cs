@@ -8,14 +8,16 @@ namespace Core.Files {
         protected List<byte> lstbOutputBuffer;
 
         protected BinHandler() {
-            InitializeHexTable();
+            htDecryptBuffer = new Hashtable();
             lstbOutputBuffer = new List<byte>();
+            InitializeHexTable();
         }
 
         private void InitializeHexTable() {
-            this.htDecryptBuffer = new Hashtable();
+            htDecryptBuffer.Clear();
+
             for (int i = 0; i <= 255; i++) {
-                this.htDecryptBuffer.Add(i.ToString("X2").PadLeft(2, '0'), System.Convert.ToByte(i ^ 215));
+                htDecryptBuffer.Add(i.ToString("X2").PadLeft(2, '0'), Convert.ToByte(i ^ 215));
             }
         }
     }

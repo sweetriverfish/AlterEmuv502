@@ -1,6 +1,4 @@
-﻿using System.Collections;
-
-namespace Authorization.Packets
+﻿namespace Authorization.Packets
 {
     class ServerList : Core.Networking.OutPacket
     {
@@ -34,18 +32,17 @@ namespace Authorization.Packets
         {
             Append(Core.Constants.Error_OK);
             Append(u.ID);               // UserId
-            Append(0);                  // ?
+            Append(0);                  // Unknown
             Append(u.Name);             // User login name
             Append("*");                // User password (NULL).
             Append(u.Displayname);      // Displayname or nickname.
             Append(u.SessionID);        // Gender
             Append(21);                 // Age
             Append(0);                  // ?
-            Append(3);                  // Admin Level? 5+? +3?
-            Append("RAND");             // RAND <-- Used for validation
+            Append(0);                  // Permission Level
+            // Append("TOKEN");         // Token - Not used in 04082008
 
-            ArrayList serverList = Managers.ServerManager.Instance.GetAllAuthorized();
-
+            var serverList = Managers.ServerManager.Instance.GetAllAuthorized();
             // Servers list
             Append(serverList.Count);               // Server count
             foreach (Entities.Server server in serverList)
