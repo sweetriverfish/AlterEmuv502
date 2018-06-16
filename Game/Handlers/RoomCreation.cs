@@ -21,10 +21,10 @@ namespace Game.Handlers
                 byte mapId = packetReader.ReadByte(4); // Ignore this from the client, we will use it server side.
                 byte unknown1 = packetReader.ReadByte(5); // Unknown?
                 byte unknown2 = packetReader.ReadByte(6); // Unknown?
-                byte type = packetReader.ReadByte(7); // type?
-                byte levelLimit = packetReader.ReadByte(8); // level limit
-                bool premiumOnly = packetReader.ReadBool(9); // premium only?
-                bool enableVoteKick = packetReader.ReadBool(10); // vote kick
+                byte type = 0;
+                byte levelLimit = 0;
+                bool premiumOnly = false;
+                bool enableVoteKick = true;
 
                 // VALIDATE ROOM NAME //
                 if (name.Length == 0 || name.Length > 25)

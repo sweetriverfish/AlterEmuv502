@@ -9,14 +9,13 @@ namespace Core.Networking
         public readonly ushort Id;
 
         private int currentIndex = 0;
-        private readonly string[] blocks;
 
-        public string[] Blocks { get { return blocks; } }
+        public string[] Blocks { get; }
         private string packet = "";
 
         public InPacket(byte[] packetBuffer) {
             packet = Encoding.UTF8.GetString(packetBuffer);
-            //Console.WriteLine(" IN :: " + fullPacket.Remove(fullPacket.Length -1));
+
             string[] tempBlocks = packet.Split(' ');
 
             if (!long.TryParse(tempBlocks[0], out this.Ticks)) {
@@ -27,16 +26,16 @@ namespace Core.Networking
                 throw new Exception("Invalid packet id.");
             }
             
-            blocks = new string[tempBlocks.Length - 3];
-            Array.Copy(tempBlocks, 2, blocks, 0, tempBlocks.Length - 3);
+            Blocks = new string[tempBlocks.Length - 3];
+            Array.Copy(tempBlocks, 2, Blocks, 0, tempBlocks.Length - 3);
         }
 
         public string ReadString(int index)
         {
-            if (index < 0 || index >= blocks.Length)
+            if (index < 0 || index >= Blocks.Length)
                 throw new IndexOutOfRangeException();
 
-            return blocks[index].Replace((char)0x1D, (char)0x20);
+            return Blocks[index].Replace((char)0x1D, (char)0x20);
         }
 
         public string ReadString()
