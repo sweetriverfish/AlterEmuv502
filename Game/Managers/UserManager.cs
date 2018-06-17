@@ -30,16 +30,18 @@ namespace Game.Managers
 
         public User Get(uint sessionId)
         {
-            Sessions.TryGetValue(sessionId, out var result);
+            User result = null;
+            Sessions.TryGetValue(sessionId, out result);
 
             return result;
         }
 
         public void Remove(uint sessionId)
         {
-            if (Sessions.TryRemove(sessionId, out var u))
+            User u = null;
+            if (Sessions.TryRemove(sessionId, out u))
             {
-                if (u.Authenticated)
+                if (u != null && u.Authenticated)
                 {
                     // SAVE THE PLAYER DATA //
                     string query = string.Concat("UPDATE user_details SET kills = '", u.Kills, "', deaths = '", u.Deaths, "', headshots = '", u.Headshots, "', xp = '", u.XP, "', play_time = '0', rounds_played = '", u.RoundsPlayed, "', bombs_planted = '", u.BombsPlanted, "', bombs_defused = '", u.BombsDefused, "' WHERE id = ", u.ID, ";");
